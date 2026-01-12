@@ -2,13 +2,14 @@ import contextlib
 
 from fastapi import FastAPI
 
-from db_control import CredentialsDB
+from db_control import CredentialsDB, PermaLimitDB
 from router.overlord_api import router as overlord_api_router
 
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     CredentialsDB.set_up()
+    PermaLimitDB.set_up()
 
     try:
         yield

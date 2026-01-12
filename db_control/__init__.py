@@ -1,10 +1,4 @@
 """
-table perma_limit 1:1
-id -> credentials.id int
-char_slot int
-lore_char_slot int
-weight_bytes int
-
 table timed_limit X:1
 uid для того чтобы колизии доджить
 id -> credentials.id
@@ -29,3 +23,4 @@ access json blob
 """
 
 from .credentials_db import CredentialsDB
+from .perma_limit_db import PermaLimitDB
