@@ -1,8 +1,6 @@
 import contextlib
-import os
 
 from fastapi import FastAPI
-from fastapi.staticfiles import StaticFiles
 
 from router.overlord_api import router as overlord_api_router
 
@@ -22,12 +20,5 @@ app = FastAPI(
     redoc_url=None,
     openapi_url=None,
 )
-
-if os.getenv("FASTAPISTATIC") == "1":
-    app.mount(
-        "/static",
-        StaticFiles(directory="static"),
-        name="static",
-    )
 
 app.include_router(overlord_api_router)

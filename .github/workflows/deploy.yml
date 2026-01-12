@@ -15,16 +15,16 @@ jobs:
           username: ${{ secrets.SPF_USER }}
           key: ${{ secrets.SPF_SSH_KEY }}
           script: |
-            cd /root/spf/
+            cd /root/spf/users
             touch MAINTENANCE
 
-            sudo systemctl stop .service
+            sudo systemctl stop spf-users.service
 
             git fetch origin master
             git reset --hard origin/master
 
             chmod -R o+rX static
 
-            sudo systemctl start .service
+            sudo systemctl start spf-users.service
 
             rm -f MAINTENANCE
