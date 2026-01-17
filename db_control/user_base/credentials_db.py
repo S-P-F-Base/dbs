@@ -3,7 +3,7 @@ from typing import Any
 
 from db_control.base_db import SQLTask
 
-from .base_db import BaseDB
+from ..base_db import BaseDB
 
 
 class CredentialsDB(BaseDB):

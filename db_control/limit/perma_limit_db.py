@@ -1,7 +1,7 @@
 from queue import Queue
 from typing import Any
 
-from .base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask
 
 
 class PermaLimitDB(BaseDB):

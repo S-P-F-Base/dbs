@@ -2,7 +2,7 @@ import time
 from queue import Queue
 from typing import Any, Literal
 
-from .base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask
 
 TimedLimitStatus = Literal[
     "active",
