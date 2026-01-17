@@ -2,13 +2,13 @@ import json
 from queue import Queue
 from typing import Any, Literal
 
-from .base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask
 
-CharType = Literal["lore", "norm"]
+PlayerCharType = Literal["lore", "norm"]
 
 
-class DbCharDB(BaseDB):
-    _db_name = "db_char"
+class PlayerCharDB(BaseDB):
+    _db_name = "player_char_db"
 
     _worker_started: bool = False
     _queue = Queue()
@@ -18,7 +18,7 @@ class DbCharDB(BaseDB):
         sql_t = [
             SQLTask(
                 """
-                CREATE TABLE IF NOT EXISTS db_char (
+                CREATE TABLE IF NOT EXISTS player_char_db (
                     uid INTEGER PRIMARY KEY AUTOINCREMENT,
                     id INTEGER NOT NULL,
                     name TEXT NOT NULL,
@@ -29,7 +29,9 @@ class DbCharDB(BaseDB):
                 );
                 """
             ),
-            SQLTask("CREATE INDEX IF NOT EXISTS idx_db_char_id ON db_char (id);"),
+            SQLTask(
+                "CREATE INDEX IF NOT EXISTS idx_player_char_db_id ON player_char_db (id);"
+            ),
         ]
         super()._init_db(sql_t)
 
@@ -38,7 +40,7 @@ class DbCharDB(BaseDB):
         cls,
         id: int,
         name: str,
-        char_type: CharType,
+        char_type: PlayerCharType,
         content_ids: list[str],
         discord_url: str | None = None,
         game_db_id: int | None = None,
@@ -48,7 +50,7 @@ class DbCharDB(BaseDB):
         cls.submit_write(
             SQLTask(
                 """
-                INSERT INTO db_char
+                INSERT INTO player_char_db
                 (id, name, discord_url, char_type, content_ids, game_db_id)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
@@ -62,7 +64,7 @@ class DbCharDB(BaseDB):
         uid: int,
         name: str | None = None,
         discord_url: str | None = None,
-        char_type: CharType | None = None,
+        char_type: PlayerCharType | None = None,
         content_ids: list[str] | None = None,
         game_db_id: int | None = None,
     ) -> None:
@@ -97,7 +99,7 @@ class DbCharDB(BaseDB):
         cls.submit_write(
             SQLTask(
                 f"""
-                UPDATE db_char
+                UPDATE player_char_db
                 SET {", ".join(fields)}
                 WHERE uid = ?
                 """,
@@ -107,7 +109,7 @@ class DbCharDB(BaseDB):
 
     @classmethod
     def delete(cls, uid: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM db_char WHERE uid = ?", (uid,)))
+        cls.submit_write(SQLTask("DELETE FROM player_char_db WHERE uid = ?", (uid,)))
 
     @classmethod
     def get(cls, uid: int) -> dict[str, Any] | None:
@@ -115,7 +117,7 @@ class DbCharDB(BaseDB):
             cur = conn.execute(
                 """
                 SELECT uid, id, name, discord_url, char_type, content_ids, game_db_id
-                FROM db_char
+                FROM player_char_db
                 WHERE uid = ?
                 """,
                 (uid,),
@@ -147,7 +149,7 @@ class DbCharDB(BaseDB):
             cur = conn.execute(
                 """
                 SELECT uid, id, name, discord_url, char_type, content_ids, game_db_id
-                FROM db_char
+                FROM player_char_db
                 WHERE id = ?
                 ORDER BY uid
                 """,
