@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import JSONResponse
 
 from config import USER_GET_TYPE_L
-from db_control import CredentialsDB
+from db_control.user_base import CredentialsDB
 
 router = APIRouter()
 
