@@ -1,9 +1,9 @@
-
 from queue import Queue
+from typing import Literal
 
 from ..base_db import BaseDB, SQLTask
 
-
+LoreCharStatus = Literal["free", "taken", "npb", "block"]
 
 
 class LoreCharRegistryDB(BaseDB):
@@ -28,4 +28,5 @@ class LoreCharRegistryDB(BaseDB):
             ),
         ]
         super()._init_db(sql_t)
+
     # TODO: methods
