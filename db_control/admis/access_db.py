@@ -2,7 +2,7 @@ import json
 from queue import Queue
 from typing import Any
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 
 class AccessDB(BaseDB):
@@ -27,118 +27,68 @@ class AccessDB(BaseDB):
     def create(
         cls,
         cid: int,
-        version: int = 0,
         access: dict[str, bool] | None = None,
+        version: int = 0,
     ) -> None:
-        payload = json.dumps(access or {}, ensure_ascii=False)
-
-        cls.submit_write(
-            SQLTask(
-                """
-                INSERT INTO access_db (cid, version, data)
-                VALUES (?, ?, ?)
-                """,
-                (cid, version, payload),
-            )
+        cls._insert(
+            cid=(cid, int),
+            version=(version, int),
+            data=(access or {}, json),
         )
 
     @classmethod
     def update(
         cls,
         cid: int,
-        version: int | None = None,
+        *,
         access: dict[str, bool] | None = None,
+        version: int | None = None,
     ) -> None:
-        fields = []
-        params: list[Any] = []
+        cols = {}
 
         if version is not None:
-            fields.append("version = ?")
-            params.append(version)
+            cols["version"] = (version, int)
 
         if access is not None:
-            fields.append("data = ?")
-            params.append(json.dumps(access, ensure_ascii=False))
+            cols["data"] = (access, json)
 
-        if not fields:
+        if not cols:
             return
 
-        params.append(cid)
-
-        cls.submit_write(
-            SQLTask(
-                f"""
-                UPDATE access_db
-                SET {", ".join(fields)}
-                WHERE cid = ?
-                """,
-                tuple(params),
-            )
+        cls._update(
+            where=("cid", cid),
+            **cols,
         )
 
     @classmethod
     def delete(cls, cid: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM access_db WHERE cid = ?", (cid,)))
+        cls._delete(where=("cid", cid))
 
     @classmethod
     def get(cls, cid: int) -> dict[str, Any] | None:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT cid, version, data
-                FROM access_db
-                WHERE cid = ?
-                """,
-                (cid,),
-            )
-            row = cur.fetchone()
-
-        if row is None:
-            return None
-
-        try:
-            access_data = json.loads(row[2])
-
-        except Exception:
-            access_data = {}
-
-        return {
-            "cid": row[0],
-            "version": row[1],
-            "access": access_data,
-        }
+        return cls._get(
+            where=("cid", cid),
+            fields={
+                "cid": int,
+                "version": int,
+                "data": json,
+            },
+        )
 
     @classmethod
-    def get_by_version(
-        cls,
-        version: int = 0,
-    ) -> list[dict[str, Any]]:
+    def get_by_version(cls, version: int) -> list[dict[str, Any]]:
         with cls.read() as conn:
             cur = conn.execute(
-                """
-                SELECT cid, version, data
-                FROM access_db
-                WHERE version = ?
-                """,
+                "SELECT cid, version, data FROM access_db WHERE version = ?",
                 (version,),
             )
             rows = cur.fetchall()
 
-        out: list[dict[str, Any]] = []
-
-        for id_, ver, raw_access in rows:
-            try:
-                access_data = json.loads(raw_access)
-
-            except Exception:
-                access_data = {}
-
-            out.append(
-                {
-                    "cid": id_,
-                    "version": ver,
-                    "access": access_data,
-                }
-            )
-
-        return out
+        return [
+            {
+                "cid": cid,
+                "version": ver,
+                "access": json.loads(raw),
+            }
+            for cid, ver, raw in rows
+        ]

@@ -1,7 +1,7 @@
 from queue import Queue
 from typing import Literal
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 LoreCharStatus = Literal[
     "free",  # Свободен

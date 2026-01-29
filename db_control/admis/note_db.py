@@ -1,6 +1,6 @@
 from queue import Queue
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 
 class NoteDB(BaseDB):

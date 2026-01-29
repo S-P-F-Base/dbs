@@ -1,3 +1,4 @@
+import json
 import logging
 import sqlite3
 from collections.abc import Sequence
@@ -6,6 +7,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Queue
 from threading import Thread
+from typing import Any
 
 _DB_DIR = Path("data/dbs")
 
@@ -113,6 +115,20 @@ class BaseDB:
             queue.put(task)
 
     @classmethod
+    def _pack(cls, value, typ):
+        if typ is json:
+            return json.dumps(value, ensure_ascii=False)
+
+        return value
+
+    @classmethod
+    def _unpack(cls, value, typ):
+        if typ is json:
+            return json.loads(value)
+
+        return typ(value) if typ is not None else value
+
+    @classmethod
     def submit_write(cls, sql_t: SQLTask):
         cls._get_queue().put(sql_t)
 
@@ -125,3 +141,58 @@ class BaseDB:
 
         finally:
             conn.close()
+
+    @classmethod
+    def _insert(cls, **cols):
+        keys = []
+        vals = []
+
+        for k, (v, t) in cols.items():
+            keys.append(k)
+            vals.append(cls._pack(v, t))
+
+        sql = f"INSERT INTO {cls._db_name} ({', '.join(keys)}) VALUES ({', '.join('?' * len(vals))})"
+        cls.submit_write(SQLTask(sql, tuple(vals)))
+
+    @classmethod
+    def _update(cls, *, where: tuple[str, object], **cols):
+        set_sql = []
+        params = []
+
+        for k, (v, t) in cols.items():
+            set_sql.append(f"{k} = ?")
+            params.append(cls._pack(v, t))
+
+        w_key, w_val = where
+        params.append(w_val)
+
+        sql = f"UPDATE {cls._db_name} SET {', '.join(set_sql)} WHERE {w_key} = ?"
+        cls.submit_write(SQLTask(sql, tuple(params)))
+
+    @classmethod
+    def _get(cls, *, where: tuple[str, object], fields: dict[str, type]):
+        w_key, w_val = where
+        cols = ", ".join(fields.keys())
+
+        with cls.read() as conn:
+            cur = conn.execute(
+                f"SELECT {cols} FROM {cls._db_name} WHERE {w_key} = ?",
+                (w_val,),
+            )
+            row = cur.fetchone()
+
+        if row is None:
+            return None
+
+        return {k: cls._unpack(v, fields[k]) for k, v in zip(fields.keys(), row)}
+
+    @classmethod
+    def _delete(cls, *, where: tuple[str, Any]) -> None:
+        col, value = where
+
+        cls.submit_write(
+            SQLTask(
+                f"DELETE FROM {cls._db_name} WHERE {col} = ?",
+                (value,),
+            )
+        )
