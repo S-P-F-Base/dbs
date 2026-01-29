@@ -1,7 +1,7 @@
 from queue import Queue
 from typing import Any
 
-from ..base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask, TableSpec
 
 
 class PermaLimitDB(BaseDB):
@@ -10,26 +10,24 @@ class PermaLimitDB(BaseDB):
     _worker_started: bool = False
     _queue = Queue()
 
+    TABLE = TableSpec(
+        name="perma_limit",
+        columns=[
+            "cid INTEGER PRIMARY KEY",  # credential.id
+            "char_slot INTEGER NOT NULL DEFAULT 0",  # количество обычных слотов
+            "lore_char_slot INTEGER NOT NULL DEFAULT 0",  # количество лорных слотов
+            "weight_bytes INTEGER NOT NULL DEFAULT 0",  # байтики доступные
+        ],
+    )
+
     @classmethod
     def set_up(cls) -> None:
-        sql_t = [
-            SQLTask(
-                """
-                CREATE TABLE IF NOT EXISTS perma_limit (
-                    id INTEGER PRIMARY KEY,
-                    char_slot INTEGER NOT NULL DEFAULT 0,
-                    lore_char_slot INTEGER NOT NULL DEFAULT 0,
-                    weight_bytes INTEGER NOT NULL DEFAULT 0
-                );
-                """
-            )
-        ]
-        super()._init_db(sql_t)
+        cls._init_from_spec(cls.TABLE)
 
     @classmethod
     def create(
         cls,
-        id: int,
+        cid: int,
         char_slot: int = 0,
         lore_char_slot: int = 0,
         weight_bytes: int = 0,
@@ -37,17 +35,17 @@ class PermaLimitDB(BaseDB):
         cls.submit_write(
             SQLTask(
                 """
-                INSERT INTO perma_limit (id, char_slot, lore_char_slot, weight_bytes)
+                INSERT INTO perma_limit (cid, char_slot, lore_char_slot, weight_bytes)
                 VALUES (?, ?, ?, ?)
                 """,
-                (id, char_slot, lore_char_slot, weight_bytes),
+                (cid, char_slot, lore_char_slot, weight_bytes),
             )
         )
 
     @classmethod
     def update(
         cls,
-        id: int,
+        cid: int,
         char_slot: int | None = None,
         lore_char_slot: int | None = None,
         weight_bytes: int | None = None,
@@ -70,33 +68,33 @@ class PermaLimitDB(BaseDB):
         if not fields:
             return
 
-        params.append(id)
+        params.append(cid)
 
         cls.submit_write(
             SQLTask(
                 f"""
                 UPDATE perma_limit
                 SET {", ".join(fields)}
-                WHERE id = ?
+                WHERE cid = ?
                 """,
                 tuple(params),
             )
         )
 
     @classmethod
-    def delete(cls, id: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM perma_limit WHERE id = ?", (id,)))
+    def delete(cls, cid: int) -> None:
+        cls.submit_write(SQLTask("DELETE FROM perma_limit WHERE cid = ?", (cid,)))
 
     @classmethod
-    def get(cls, id: int) -> dict[str, Any] | None:
+    def get(cls, cid: int) -> dict[str, Any] | None:
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT id, char_slot, lore_char_slot, weight_bytes
+                SELECT cid, char_slot, lore_char_slot, weight_bytes
                 FROM perma_limit
-                WHERE id = ?
+                WHERE cid = ?
                 """,
-                (id,),
+                (cid,),
             )
             row = cur.fetchone()
 
@@ -104,7 +102,7 @@ class PermaLimitDB(BaseDB):
             return None
 
         return {
-            "id": row[0],
+            "cid": row[0],
             "char_slot": row[1],
             "lore_char_slot": row[2],
             "weight_bytes": row[3],

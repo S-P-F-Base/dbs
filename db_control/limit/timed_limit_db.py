@@ -2,12 +2,12 @@ import time
 from queue import Queue
 from typing import Any, Literal
 
-from ..base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask, TableSpec
 
 TimedLimitStatus = Literal[
-    "active",
-    "expired",
-    "disabled",
+    "active",  # активно
+    "expired",  # истекло
+    "disabled",  # отменено
 ]
 
 
@@ -17,34 +17,30 @@ class TimedLimitDB(BaseDB):
     _worker_started: bool = False
     _queue = Queue()
 
+    TABLE = TableSpec(
+        name="timed_limit",
+        columns=[
+            "uid INTEGER PRIMARY KEY AUTOINCREMENT",  # uuid
+            "cid INTEGER NOT NULL",  # credential.id
+            "char_slot INTEGER NOT NULL DEFAULT 0",  # сколько слотов добавлено этой записью
+            "weight_bytes INTEGER NOT NULL DEFAULT 0",  # сколько веса было добавлено
+            "expired INTEGER NOT NULL",  # когда истечёт
+            "status TEXT NOT NULL",  # статус
+        ],
+        indexes=[
+            "CREATE INDEX IF NOT EXISTS idx_timed_limit_id ON timed_limit (cid);",
+            "CREATE INDEX IF NOT EXISTS idx_timed_limit_expired ON timed_limit (expired);",
+        ],
+    )
+
     @classmethod
     def set_up(cls) -> None:
-        sql_t = [
-            SQLTask(
-                """
-                CREATE TABLE IF NOT EXISTS timed_limit (
-                    uid INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id INTEGER NOT NULL,
-                    char_slot INTEGER NOT NULL DEFAULT 0,
-                    weight_bytes INTEGER NOT NULL DEFAULT 0,
-                    expired INTEGER NOT NULL,
-                    status TEXT NOT NULL
-                );
-                """
-            ),
-            SQLTask(
-                "CREATE INDEX IF NOT EXISTS idx_timed_limit_id ON timed_limit (id);"
-            ),
-            SQLTask(
-                "CREATE INDEX IF NOT EXISTS idx_timed_limit_expired ON timed_limit (expired);"
-            ),
-        ]
-        super()._init_db(sql_t)
+        cls._init_from_spec(cls.TABLE)
 
     @classmethod
     def create(
         cls,
-        id: int,
+        cid: int,
         char_slot: int,
         weight_bytes: int,
         expired: int,
@@ -54,10 +50,10 @@ class TimedLimitDB(BaseDB):
             SQLTask(
                 """
                 INSERT INTO timed_limit
-                (id, char_slot, weight_bytes, expired, status)
+                (cid, char_slot, weight_bytes, expired, status)
                 VALUES (?, ?, ?, ?, ?)
                 """,
-                (id, char_slot, weight_bytes, expired, status),
+                (cid, char_slot, weight_bytes, expired, status),
             )
         )
 
@@ -114,7 +110,7 @@ class TimedLimitDB(BaseDB):
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT uid, id, char_slot, weight_bytes, expired, status
+                SELECT uid, cid, char_slot, weight_bytes, expired, status
                 FROM timed_limit
                 WHERE uid = ?
                 """,
@@ -127,7 +123,7 @@ class TimedLimitDB(BaseDB):
 
         return {
             "uid": row[0],
-            "id": row[1],
+            "cid": row[1],
             "char_slot": row[2],
             "weight_bytes": row[3],
             "expired": row[4],
@@ -135,23 +131,23 @@ class TimedLimitDB(BaseDB):
         }
 
     @classmethod
-    def list_by_owner(cls, id: int) -> list[dict[str, Any]]:
+    def list_by_owner(cls, cid: int) -> list[dict[str, Any]]:
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT uid, id, char_slot, weight_bytes, expired, status
+                SELECT uid, cid, char_slot, weight_bytes, expired, status
                 FROM timed_limit
-                WHERE id = ?
+                WHERE cid = ?
                 ORDER BY expired
                 """,
-                (id,),
+                (cid,),
             )
             rows = cur.fetchall()
 
         return [
             {
                 "uid": row[0],
-                "id": row[1],
+                "cid": row[1],
                 "char_slot": row[2],
                 "weight_bytes": row[3],
                 "expired": row[4],
@@ -163,7 +159,7 @@ class TimedLimitDB(BaseDB):
     @classmethod
     def list_active(
         cls,
-        id: int,
+        cid: int,
         now: int | None = None,
     ) -> list[dict[str, Any]]:
         now = now or int(time.time())
@@ -171,21 +167,21 @@ class TimedLimitDB(BaseDB):
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT uid, id, char_slot, weight_bytes, expired, status
+                SELECT uid, cid, char_slot, weight_bytes, expired, status
                 FROM timed_limit
-                WHERE id = ?
+                WHERE cid = ?
                   AND status = 'active'
                   AND expired > ?
                 ORDER BY expired
                 """,
-                (id, now),
+                (cid, now),
             )
             rows = cur.fetchall()
 
         return [
             {
                 "uid": row[0],
-                "id": row[1],
+                "cid": row[1],
                 "char_slot": row[2],
                 "weight_bytes": row[3],
                 "expired": row[4],

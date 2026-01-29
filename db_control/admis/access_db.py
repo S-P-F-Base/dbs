@@ -2,34 +2,31 @@ import json
 from queue import Queue
 from typing import Any
 
-from ..base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask, TableSpec
 
 
 class AccessDB(BaseDB):
-    _db_name = "access"
+    _db_name = "access_db"
 
     _worker_started: bool = False
     _queue = Queue()
 
+    TABLE = TableSpec(
+        name="access_db",
+        columns=[
+            "cid INTEGER PRIMARY KEY",  # credential.cid
+            "data BLOB NOT NULL",  # json blob
+        ],
+    )
+
     @classmethod
     def set_up(cls) -> None:
-        sql_t = [
-            SQLTask(
-                """
-                CREATE TABLE IF NOT EXISTS access (
-                    id INTEGER PRIMARY KEY,
-                    version INTEGER NOT NULL DEFAULT 0,
-                    access BLOB NOT NULL
-                );
-                """
-            )
-        ]
-        super()._init_db(sql_t)
+        cls._init_from_spec(cls.TABLE)
 
     @classmethod
     def create(
         cls,
-        id: int,
+        cid: int,
         version: int = 0,
         access: dict[str, bool] | None = None,
     ) -> None:
@@ -38,17 +35,17 @@ class AccessDB(BaseDB):
         cls.submit_write(
             SQLTask(
                 """
-                INSERT INTO access (id, version, access)
+                INSERT INTO access_db (cid, version, data)
                 VALUES (?, ?, ?)
                 """,
-                (id, version, payload),
+                (cid, version, payload),
             )
         )
 
     @classmethod
     def update(
         cls,
-        id: int,
+        cid: int,
         version: int | None = None,
         access: dict[str, bool] | None = None,
     ) -> None:
@@ -60,39 +57,39 @@ class AccessDB(BaseDB):
             params.append(version)
 
         if access is not None:
-            fields.append("access = ?")
+            fields.append("data = ?")
             params.append(json.dumps(access, ensure_ascii=False))
 
         if not fields:
             return
 
-        params.append(id)
+        params.append(cid)
 
         cls.submit_write(
             SQLTask(
                 f"""
-                UPDATE access
+                UPDATE access_db
                 SET {", ".join(fields)}
-                WHERE id = ?
+                WHERE cid = ?
                 """,
                 tuple(params),
             )
         )
 
     @classmethod
-    def delete(cls, id: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM access WHERE id = ?", (id,)))
+    def delete(cls, cid: int) -> None:
+        cls.submit_write(SQLTask("DELETE FROM access_db WHERE cid = ?", (cid,)))
 
     @classmethod
-    def get(cls, id: int) -> dict[str, Any] | None:
+    def get(cls, cid: int) -> dict[str, Any] | None:
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT id, version, access
-                FROM access
-                WHERE id = ?
+                SELECT cid, version, data
+                FROM access_db
+                WHERE cid = ?
                 """,
-                (id,),
+                (cid,),
             )
             row = cur.fetchone()
 
@@ -106,7 +103,7 @@ class AccessDB(BaseDB):
             access_data = {}
 
         return {
-            "id": row[0],
+            "cid": row[0],
             "version": row[1],
             "access": access_data,
         }
@@ -119,8 +116,8 @@ class AccessDB(BaseDB):
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT id, version, access
-                FROM access
+                SELECT cid, version, data
+                FROM access_db
                 WHERE version = ?
                 """,
                 (version,),
@@ -138,7 +135,7 @@ class AccessDB(BaseDB):
 
             out.append(
                 {
-                    "id": id_,
+                    "cid": id_,
                     "version": ver,
                     "access": access_data,
                 }

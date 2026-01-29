@@ -2,7 +2,7 @@ import json
 from queue import Queue
 from typing import Any, Literal
 
-from ..base_db import BaseDB, SQLTask
+from ..base_db import BaseDB, SQLTask, TableSpec
 
 PlayerCharType = Literal["lore", "norm"]
 
@@ -13,32 +13,30 @@ class PlayerCharDB(BaseDB):
     _worker_started: bool = False
     _queue = Queue()
 
+    TABLE = TableSpec(
+        name="player_char_db",
+        columns=[
+            "uid INTEGER PRIMARY KEY AUTOINCREMENT",  # uuid
+            "cid INTEGER NOT NULL",  # credential.id
+            "name TEXT NOT NULL",  # имя персонажа
+            "discord_url TEXT",  # discord url
+            "char_type TEXT NOT NULL",  # тип персонажа
+            "content_ids BLOB NOT NULL",  # айдишки контента к этому персонажу
+            "game_db_id INTEGER",  # Пока что nill
+        ],
+        indexes=[
+            "CREATE INDEX IF NOT EXISTS idx_player_char_db_id ON player_char_db (cid);",
+        ],
+    )
+
     @classmethod
     def set_up(cls) -> None:
-        sql_t = [
-            SQLTask(
-                """
-                CREATE TABLE IF NOT EXISTS player_char_db (
-                    uid INTEGER PRIMARY KEY AUTOINCREMENT,
-                    id INTEGER NOT NULL,
-                    name TEXT NOT NULL,
-                    discord_url TEXT,
-                    char_type TEXT NOT NULL,
-                    content_ids BLOB NOT NULL,
-                    game_db_id INTEGER
-                );
-                """
-            ),
-            SQLTask(
-                "CREATE INDEX IF NOT EXISTS idx_player_char_db_id ON player_char_db (id);"
-            ),
-        ]
-        super()._init_db(sql_t)
+        cls._init_from_spec(cls.TABLE)
 
     @classmethod
     def create(
         cls,
-        id: int,
+        cid: int,
         name: str,
         char_type: PlayerCharType,
         content_ids: list[str],
@@ -51,10 +49,10 @@ class PlayerCharDB(BaseDB):
             SQLTask(
                 """
                 INSERT INTO player_char_db
-                (id, name, discord_url, char_type, content_ids, game_db_id)
+                (cid, name, discord_url, char_type, content_ids, game_db_id)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (id, name, discord_url, char_type, payload, game_db_id),
+                (cid, name, discord_url, char_type, payload, game_db_id),
             )
         )
 
@@ -116,7 +114,7 @@ class PlayerCharDB(BaseDB):
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT uid, id, name, discord_url, char_type, content_ids, game_db_id
+                SELECT uid, cid, name, discord_url, char_type, content_ids, game_db_id
                 FROM player_char_db
                 WHERE uid = ?
                 """,
@@ -135,7 +133,7 @@ class PlayerCharDB(BaseDB):
 
         return {
             "uid": row[0],
-            "id": row[1],
+            "cid": row[1],
             "name": row[2],
             "discord_url": row[3],
             "char_type": row[4],
@@ -144,16 +142,16 @@ class PlayerCharDB(BaseDB):
         }
 
     @classmethod
-    def list_by_owner(cls, id: int) -> list[dict[str, Any]]:
+    def list_by_owner(cls, cid: int) -> list[dict[str, Any]]:
         with cls.read() as conn:
             cur = conn.execute(
                 """
-                SELECT uid, id, name, discord_url, char_type, content_ids, game_db_id
+                SELECT uid, cid, name, discord_url, char_type, content_ids, game_db_id
                 FROM player_char_db
-                WHERE id = ?
+                WHERE cid = ?
                 ORDER BY uid
                 """,
-                (id,),
+                (cid,),
             )
             rows = cur.fetchall()
 
@@ -169,7 +167,7 @@ class PlayerCharDB(BaseDB):
             out.append(
                 {
                     "uid": row[0],
-                    "id": row[1],
+                    "cid": row[1],
                     "name": row[2],
                     "discord_url": row[3],
                     "char_type": row[4],

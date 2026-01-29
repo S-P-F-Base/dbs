@@ -6,10 +6,43 @@ from router.info_api import router as info_api_router
 from router.overlord_api import router as overlord_api_router
 from router.user_api import router as user_api_router
 
+from db_control import (
+    AccessDB,
+    BlacklistDB,
+    CommerceServicesDB,
+    CommercialChecksDB,
+    CredentialsDB,
+    CustomizationDB,
+    ForgetmeDB,
+    LoreCharRegistryDB,
+    NoteDB,
+    OptinDB,
+    PermaLimitDB,
+    PlayerCharDB,
+    TimedLimitDB,
+)
+
 
 @contextlib.asynccontextmanager
 async def lifespan(app: FastAPI):
     try:
+        for cl in [
+            AccessDB,
+            BlacklistDB,
+            CommerceServicesDB,
+            CommercialChecksDB,
+            CredentialsDB,
+            CustomizationDB,
+            ForgetmeDB,
+            LoreCharRegistryDB,
+            NoteDB,
+            OptinDB,
+            PermaLimitDB,
+            PlayerCharDB,
+            TimedLimitDB,
+        ]:
+            cl.set_up()
+
         yield
 
     finally:

@@ -2,7 +2,7 @@ import logging
 import sqlite3
 from collections.abc import Sequence
 from contextlib import contextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 from queue import Queue
 from threading import Thread
@@ -14,6 +14,25 @@ _DB_DIR = Path("data/dbs")
 class SQLTask:
     sql: str
     params: Sequence | None = None
+
+
+@dataclass(frozen=True)
+class TableSpec:
+    name: str
+    columns: list[str]
+    indexes: list[str] = field(default_factory=list)
+
+    def sql_tasks(self) -> list[SQLTask]:
+        tasks = [
+            SQLTask(
+                f"CREATE TABLE IF NOT EXISTS {self.name} ({', '.join(self.columns)});"
+            )
+        ]
+
+        for idx in self.indexes:
+            tasks.append(SQLTask(idx))
+
+        return tasks
 
 
 class BaseDB:
@@ -79,6 +98,10 @@ class BaseDB:
                     queue.task_done()
 
         Thread(target=worker, daemon=True).start()
+
+    @classmethod
+    def _init_from_spec(cls, spec: TableSpec) -> None:
+        cls._init_db(spec.sql_tasks())
 
     @classmethod
     def _init_db(cls, sql_t: list[SQLTask]) -> None:

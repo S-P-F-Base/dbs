@@ -1,45 +1,41 @@
 from queue import Queue
 from typing import Any
 
-from db_control.base_db import SQLTask
-
-from ..base_db import BaseDB
+from ..base_db import BaseDB, SQLTask, TableSpec
 
 
 class CredentialsDB(BaseDB):
-    _db_name = "credentials"
+    _db_name = "credentials_db"
 
     _worker_started: bool = False
     _queue = Queue()
 
+    TABLE = TableSpec(
+        name="credentials_db",
+        columns=[
+            "id INTEGER PRIMARY KEY AUTOINCREMENT",  # credential.id (анкер поинт всех таблиц)
+            "discord_id TEXT NOT NULL UNIQUE",  # дискорд айди. По нему идёт вся регистрация
+            "steam64_id TEXT",  # стим айди чтобы проще было потом связывать игру и сайт
+            "dirty INTEGER NOT NULL DEFAULT 1",  # статус синхранизации. Пока что все не синхонизированы
+        ],
+    )
+
     @classmethod
     def set_up(cls) -> None:
-        sql_t = [
-            SQLTask(
-                """
-                CREATE TABLE IF NOT EXISTS credentials (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    discord_id TEXT NOT NULL UNIQUE,
-                    steam64_id TEXT,
-                    dirty INTEGER NOT NULL DEFAULT 1
-                );
-                """
-            )
-        ]
-        super()._init_db(sql_t)
+        cls._init_from_spec(cls.TABLE)
 
     @classmethod
     def create(cls, discord_id: str, steam64_id: str | None) -> None:
         cls.submit_write(
             SQLTask(
-                "INSERT INTO credentials (discord_id, steam64_id) VALUES (?, ?)",
+                "INSERT INTO credentials_db (discord_id, steam64_id) VALUES (?, ?)",
                 (discord_id, steam64_id),
             )
         )
 
     @classmethod
     def delete(cls, id: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM credentials WHERE id = ?", (id,)))
+        cls.submit_write(SQLTask("DELETE FROM credentials_db WHERE id = ?", (id,)))
 
     @classmethod
     def update(
@@ -66,7 +62,7 @@ class CredentialsDB(BaseDB):
 
         cls.submit_write(
             SQLTask(
-                f"UPDATE credentials SET {', '.join(fields)} WHERE id = ?",
+                f"UPDATE credentials_db SET {', '.join(fields)} WHERE id = ?",
                 tuple(params),
             )
         )
@@ -95,7 +91,7 @@ class CredentialsDB(BaseDB):
             cur = conn.execute(
                 f"""
                 SELECT id, discord_id, steam64_id, dirty
-                FROM credentials
+                FROM credentials_db
                 WHERE {field} = ?
                 """,
                 (value,),
@@ -127,11 +123,11 @@ class CredentialsDB(BaseDB):
     @classmethod
     def set_dirty(cls, id: int) -> None:
         cls.submit_write(
-            SQLTask("UPDATE credentials SET dirty = 1 WHERE id = ?", (id,))
+            SQLTask("UPDATE credentials_db SET dirty = 1 WHERE id = ?", (id,))
         )
 
     @classmethod
     def clear_dirty(cls, id: int) -> None:
         cls.submit_write(
-            SQLTask("UPDATE credentials SET dirty = 0 WHERE id = ?", (id,))
+            SQLTask("UPDATE credentials_db SET dirty = 0 WHERE id = ?", (id,))
         )
