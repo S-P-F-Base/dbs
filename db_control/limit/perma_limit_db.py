@@ -1,4 +1,3 @@
-from queue import Queue
 from typing import Any
 
 from ..base_db import BaseDB, SQLTask, TableSpec
@@ -6,9 +5,6 @@ from ..base_db import BaseDB, SQLTask, TableSpec
 
 class PermaLimitDB(BaseDB):
     _db_name = "perma_limit"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="perma_limit",
@@ -32,7 +28,7 @@ class PermaLimitDB(BaseDB):
         lore_char_slot: int = 0,
         weight_bytes: int = 0,
     ) -> None:
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 """
                 INSERT INTO perma_limit (cid, char_slot, lore_char_slot, weight_bytes)
@@ -70,7 +66,7 @@ class PermaLimitDB(BaseDB):
 
         params.append(cid)
 
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 f"""
                 UPDATE perma_limit
@@ -83,7 +79,7 @@ class PermaLimitDB(BaseDB):
 
     @classmethod
     def delete(cls, cid: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM perma_limit WHERE cid = ?", (cid,)))
+        cls.write(SQLTask("DELETE FROM perma_limit WHERE cid = ?", (cid,)))
 
     @classmethod
     def get(cls, cid: int) -> dict[str, Any] | None:

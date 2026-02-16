@@ -1,13 +1,8 @@
-from queue import Queue
-
 from ..base_db import BaseDB, TableSpec
 
 
 class CommercialChecksDB(BaseDB):
     _db_name = "commercial_checks_db"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="commercial_checks_db",

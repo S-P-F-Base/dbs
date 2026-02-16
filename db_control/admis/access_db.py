@@ -1,5 +1,4 @@
 import json
-from queue import Queue
 from typing import Any
 
 from ..base_db import BaseDB, TableSpec
@@ -7,9 +6,6 @@ from ..base_db import BaseDB, TableSpec
 
 class AccessDB(BaseDB):
     _db_name = "access_db"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="access_db",

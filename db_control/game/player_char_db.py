@@ -1,5 +1,4 @@
 import json
-from queue import Queue
 from typing import Any, Literal
 
 from ..base_db import BaseDB, SQLTask, TableSpec
@@ -9,9 +8,6 @@ PlayerCharType = Literal["lore", "norm"]
 
 class PlayerCharDB(BaseDB):
     _db_name = "player_char_db"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="player_char_db",
@@ -45,7 +41,7 @@ class PlayerCharDB(BaseDB):
     ) -> None:
         payload = json.dumps(content_ids, ensure_ascii=False)
 
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 """
                 INSERT INTO player_char_db
@@ -94,7 +90,7 @@ class PlayerCharDB(BaseDB):
 
         params.append(uid)
 
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 f"""
                 UPDATE player_char_db
@@ -107,7 +103,7 @@ class PlayerCharDB(BaseDB):
 
     @classmethod
     def delete(cls, uid: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM player_char_db WHERE uid = ?", (uid,)))
+        cls.write(SQLTask("DELETE FROM player_char_db WHERE uid = ?", (uid,)))
 
     @classmethod
     def get(cls, uid: int) -> dict[str, Any] | None:

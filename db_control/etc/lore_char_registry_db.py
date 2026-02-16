@@ -1,4 +1,3 @@
-from queue import Queue
 from typing import Literal
 
 from ..base_db import BaseDB, TableSpec
@@ -13,9 +12,6 @@ LoreCharStatus = Literal[
 
 class LoreCharRegistryDB(BaseDB):
     _db_name = "lore_char_registry"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="lore_char_registry",

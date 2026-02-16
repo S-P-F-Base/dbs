@@ -1,4 +1,3 @@
-from queue import Queue
 from typing import Any
 
 from ..base_db import BaseDB, SQLTask, TableSpec
@@ -6,9 +5,6 @@ from ..base_db import BaseDB, SQLTask, TableSpec
 
 class CredentialsDB(BaseDB):
     _db_name = "credentials_db"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="credentials_db",
@@ -26,7 +22,7 @@ class CredentialsDB(BaseDB):
 
     @classmethod
     def create(cls, discord_id: str, steam64_id: str | None) -> None:
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 "INSERT INTO credentials_db (discord_id, steam64_id) VALUES (?, ?)",
                 (discord_id, steam64_id),
@@ -35,7 +31,7 @@ class CredentialsDB(BaseDB):
 
     @classmethod
     def delete(cls, id: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM credentials_db WHERE id = ?", (id,)))
+        cls.write(SQLTask("DELETE FROM credentials_db WHERE id = ?", (id,)))
 
     @classmethod
     def update(
@@ -60,7 +56,7 @@ class CredentialsDB(BaseDB):
 
         params.append(id)
 
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 f"UPDATE credentials_db SET {', '.join(fields)} WHERE id = ?",
                 tuple(params),
@@ -122,12 +118,8 @@ class CredentialsDB(BaseDB):
 
     @classmethod
     def set_dirty(cls, id: int) -> None:
-        cls.submit_write(
-            SQLTask("UPDATE credentials_db SET dirty = 1 WHERE id = ?", (id,))
-        )
+        cls.write(SQLTask("UPDATE credentials_db SET dirty = 1 WHERE id = ?", (id,)))
 
     @classmethod
     def clear_dirty(cls, id: int) -> None:
-        cls.submit_write(
-            SQLTask("UPDATE credentials_db SET dirty = 0 WHERE id = ?", (id,))
-        )
+        cls.write(SQLTask("UPDATE credentials_db SET dirty = 0 WHERE id = ?", (id,)))

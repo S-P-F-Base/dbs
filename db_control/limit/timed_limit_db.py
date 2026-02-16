@@ -1,5 +1,4 @@
 import time
-from queue import Queue
 from typing import Any, Literal
 
 from ..base_db import BaseDB, SQLTask, TableSpec
@@ -13,9 +12,6 @@ TimedLimitStatus = Literal[
 
 class TimedLimitDB(BaseDB):
     _db_name = "timed_limit"
-
-    _worker_started: bool = False
-    _queue = Queue()
 
     TABLE = TableSpec(
         name="timed_limit",
@@ -46,7 +42,7 @@ class TimedLimitDB(BaseDB):
         expired: int,
         status: TimedLimitStatus = "active",
     ) -> None:
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 """
                 INSERT INTO timed_limit
@@ -90,7 +86,7 @@ class TimedLimitDB(BaseDB):
 
         params.append(uid)
 
-        cls.submit_write(
+        cls.write(
             SQLTask(
                 f"""
                 UPDATE timed_limit
@@ -103,7 +99,7 @@ class TimedLimitDB(BaseDB):
 
     @classmethod
     def delete(cls, uid: int) -> None:
-        cls.submit_write(SQLTask("DELETE FROM timed_limit WHERE uid = ?", (uid,)))
+        cls.write(SQLTask("DELETE FROM timed_limit WHERE uid = ?", (uid,)))
 
     @classmethod
     def get(cls, uid: int) -> dict[str, Any] | None:
