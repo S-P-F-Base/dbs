@@ -1,7 +1,6 @@
-import json
 from typing import Any, Literal
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 PlayerCharType = Literal["lore", "norm"]
 
@@ -39,17 +38,13 @@ class PlayerCharDB(BaseDB):
         discord_url: str | None = None,
         game_db_id: int | None = None,
     ) -> None:
-        payload = json.dumps(content_ids, ensure_ascii=False)
-
-        cls.write(
-            SQLTask(
-                """
-                INSERT INTO player_char_db
-                (cid, name, discord_url, char_type, content_ids, game_db_id)
-                VALUES (?, ?, ?, ?, ?, ?)
-                """,
-                (cid, name, discord_url, char_type, payload, game_db_id),
-            )
+        cls._insert(
+            cid=(cid, int),
+            name=(name, str),
+            discord_url=(discord_url, str),
+            char_type=(char_type, str),
+            content_ids=(content_ids, list),
+            game_db_id=(game_db_id, int),
         )
 
     @classmethod
@@ -62,114 +57,62 @@ class PlayerCharDB(BaseDB):
         content_ids: list[str] | None = None,
         game_db_id: int | None = None,
     ) -> None:
-        fields = []
-        params: list[Any] = []
+        cols = {}
 
         if name is not None:
-            fields.append("name = ?")
-            params.append(name)
+            cols["name"] = (name, str)
 
         if discord_url is not None:
-            fields.append("discord_url = ?")
-            params.append(discord_url)
+            cols["discord_url"] = (discord_url, str)
 
         if char_type is not None:
-            fields.append("char_type = ?")
-            params.append(char_type)
+            cols["char_type"] = (char_type, str)
 
         if content_ids is not None:
-            fields.append("content_ids = ?")
-            params.append(json.dumps(content_ids, ensure_ascii=False))
+            cols["content_ids"] = (content_ids, list)
 
         if game_db_id is not None:
-            fields.append("game_db_id = ?")
-            params.append(game_db_id)
+            cols["game_db_id"] = (game_db_id, int)
 
-        if not fields:
+        if not cols:
             return
 
-        params.append(uid)
-
-        cls.write(
-            SQLTask(
-                f"""
-                UPDATE player_char_db
-                SET {", ".join(fields)}
-                WHERE uid = ?
-                """,
-                tuple(params),
-            )
+        cls._update(
+            where=("uid", uid),
+            **cols,
         )
 
     @classmethod
     def delete(cls, uid: int) -> None:
-        cls.write(SQLTask("DELETE FROM player_char_db WHERE uid = ?", (uid,)))
+        cls._delete(where=("uid", uid))
 
     @classmethod
     def get(cls, uid: int) -> dict[str, Any] | None:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT uid, cid, name, discord_url, char_type, content_ids, game_db_id
-                FROM player_char_db
-                WHERE uid = ?
-                """,
-                (uid,),
-            )
-            row = cur.fetchone()
-
-        if row is None:
-            return None
-
-        try:
-            content_ids = json.loads(row[5])
-
-        except Exception:
-            content_ids = []
-
-        return {
-            "uid": row[0],
-            "cid": row[1],
-            "name": row[2],
-            "discord_url": row[3],
-            "char_type": row[4],
-            "content_ids": content_ids,
-            "game_db_id": row[6],
-        }
+        return cls._get(
+            where=("uid", uid),
+            fields={
+                "uid": int,
+                "cid": int,
+                "name": str,
+                "discord_url": str,
+                "char_type": str,
+                "content_ids": list,
+                "game_db_id": int,
+            },
+        )
 
     @classmethod
     def list_by_owner(cls, cid: int) -> list[dict[str, Any]]:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT uid, cid, name, discord_url, char_type, content_ids, game_db_id
-                FROM player_char_db
-                WHERE cid = ?
-                ORDER BY uid
-                """,
-                (cid,),
-            )
-            rows = cur.fetchall()
-
-        out: list[dict[str, Any]] = []
-
-        for row in rows:
-            try:
-                content_ids = json.loads(row[5])
-
-            except Exception:
-                content_ids = []
-
-            out.append(
-                {
-                    "uid": row[0],
-                    "cid": row[1],
-                    "name": row[2],
-                    "discord_url": row[3],
-                    "char_type": row[4],
-                    "content_ids": content_ids,
-                    "game_db_id": row[6],
-                }
-            )
-
-        return out
+        return cls._list(
+            where=("cid", cid),
+            order_by="uid",
+            fields={
+                "uid": int,
+                "cid": int,
+                "name": str,
+                "discord_url": str,
+                "char_type": str,
+                "content_ids": list,
+                "game_db_id": int,
+            },
+        )

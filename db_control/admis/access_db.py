@@ -1,4 +1,3 @@
-import json
 from typing import Any
 
 from ..base_db import BaseDB, TableSpec
@@ -11,6 +10,7 @@ class AccessDB(BaseDB):
         name="access_db",
         columns=[
             "cid INTEGER PRIMARY KEY",  # credential.cid
+            "version INTEGER NOT NULL DEFAULT 0",
             "data BLOB NOT NULL",  # json blob
         ],
     )
@@ -29,7 +29,7 @@ class AccessDB(BaseDB):
         cls._insert(
             cid=(cid, int),
             version=(version, int),
-            data=(access or {}, json),
+            data=(access or {}, dict),
         )
 
     @classmethod
@@ -46,7 +46,7 @@ class AccessDB(BaseDB):
             cols["version"] = (version, int)
 
         if access is not None:
-            cols["data"] = (access, json)
+            cols["data"] = (access, dict)
 
         if not cols:
             return
@@ -67,24 +67,27 @@ class AccessDB(BaseDB):
             fields={
                 "cid": int,
                 "version": int,
-                "data": json,
+                "data": dict,
             },
         )
 
     @classmethod
     def get_by_version(cls, version: int) -> list[dict[str, Any]]:
-        with cls.read() as conn:
-            cur = conn.execute(
-                "SELECT cid, version, data FROM access_db WHERE version = ?",
-                (version,),
-            )
-            rows = cur.fetchall()
+        rows = cls._list(
+            where=("version", version),
+            order_by="cid",
+            fields={
+                "cid": int,
+                "version": int,
+                "data": dict,
+            },
+        )
 
         return [
             {
-                "cid": cid,
-                "version": ver,
-                "access": json.loads(raw),
+                "cid": row["cid"],
+                "version": row["version"],
+                "access": row["data"],
             }
-            for cid, ver, raw in rows
+            for row in rows
         ]

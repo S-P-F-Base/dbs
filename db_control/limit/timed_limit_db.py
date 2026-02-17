@@ -1,7 +1,7 @@
 import time
 from typing import Any, Literal
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 TimedLimitStatus = Literal[
     "active",  # активно
@@ -33,6 +33,17 @@ class TimedLimitDB(BaseDB):
     def set_up(cls) -> None:
         cls._init_from_spec(cls.TABLE)
 
+    @staticmethod
+    def _row_to_dict(row: tuple[Any, ...]) -> dict[str, Any]:
+        return {
+            "uid": row[0],
+            "cid": row[1],
+            "char_slot": row[2],
+            "weight_bytes": row[3],
+            "expired": row[4],
+            "status": row[5],
+        }
+
     @classmethod
     def create(
         cls,
@@ -42,15 +53,12 @@ class TimedLimitDB(BaseDB):
         expired: int,
         status: TimedLimitStatus = "active",
     ) -> None:
-        cls.write(
-            SQLTask(
-                """
-                INSERT INTO timed_limit
-                (cid, char_slot, weight_bytes, expired, status)
-                VALUES (?, ?, ?, ?, ?)
-                """,
-                (cid, char_slot, weight_bytes, expired, status),
-            )
+        cls._insert(
+            cid=(cid, int),
+            char_slot=(char_slot, int),
+            weight_bytes=(weight_bytes, int),
+            expired=(expired, int),
+            status=(status, str),
         )
 
     @classmethod
@@ -62,95 +70,60 @@ class TimedLimitDB(BaseDB):
         expired: int | None = None,
         status: TimedLimitStatus | None = None,
     ) -> None:
-        fields = []
-        params: list[Any] = []
+        cols = {}
 
         if char_slot is not None:
-            fields.append("char_slot = ?")
-            params.append(char_slot)
+            cols["char_slot"] = (char_slot, int)
 
         if weight_bytes is not None:
-            fields.append("weight_bytes = ?")
-            params.append(weight_bytes)
+            cols["weight_bytes"] = (weight_bytes, int)
 
         if expired is not None:
-            fields.append("expired = ?")
-            params.append(expired)
+            cols["expired"] = (expired, int)
 
         if status is not None:
-            fields.append("status = ?")
-            params.append(status)
+            cols["status"] = (status, str)
 
-        if not fields:
+        if not cols:
             return
 
-        params.append(uid)
-
-        cls.write(
-            SQLTask(
-                f"""
-                UPDATE timed_limit
-                SET {", ".join(fields)}
-                WHERE uid = ?
-                """,
-                tuple(params),
-            )
+        cls._update(
+            where=("uid", uid),
+            **cols,
         )
 
     @classmethod
     def delete(cls, uid: int) -> None:
-        cls.write(SQLTask("DELETE FROM timed_limit WHERE uid = ?", (uid,)))
+        cls._delete(where=("uid", uid))
 
     @classmethod
     def get(cls, uid: int) -> dict[str, Any] | None:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT uid, cid, char_slot, weight_bytes, expired, status
-                FROM timed_limit
-                WHERE uid = ?
-                """,
-                (uid,),
-            )
-            row = cur.fetchone()
-
-        if row is None:
-            return None
-
-        return {
-            "uid": row[0],
-            "cid": row[1],
-            "char_slot": row[2],
-            "weight_bytes": row[3],
-            "expired": row[4],
-            "status": row[5],
-        }
+        return cls._get(
+            where=("uid", uid),
+            fields={
+                "uid": int,
+                "cid": int,
+                "char_slot": int,
+                "weight_bytes": int,
+                "expired": int,
+                "status": str,
+            },
+        )
 
     @classmethod
     def list_by_owner(cls, cid: int) -> list[dict[str, Any]]:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT uid, cid, char_slot, weight_bytes, expired, status
-                FROM timed_limit
-                WHERE cid = ?
-                ORDER BY expired
-                """,
-                (cid,),
-            )
-            rows = cur.fetchall()
-
-        return [
-            {
-                "uid": row[0],
-                "cid": row[1],
-                "char_slot": row[2],
-                "weight_bytes": row[3],
-                "expired": row[4],
-                "status": row[5],
-            }
-            for row in rows
-        ]
+        return cls._list(
+            where=("cid", cid),
+            order_by="expired",
+            fields={
+                "uid": int,
+                "cid": int,
+                "char_slot": int,
+                "weight_bytes": int,
+                "expired": int,
+                "status": str,
+            },
+        )
 
     @classmethod
     def list_active(
@@ -158,7 +131,8 @@ class TimedLimitDB(BaseDB):
         cid: int,
         now: int | None = None,
     ) -> list[dict[str, Any]]:
-        now = now or int(time.time())
+        if now is None:
+            now = int(time.time())
 
         with cls.read() as conn:
             cur = conn.execute(
@@ -174,14 +148,4 @@ class TimedLimitDB(BaseDB):
             )
             rows = cur.fetchall()
 
-        return [
-            {
-                "uid": row[0],
-                "cid": row[1],
-                "char_slot": row[2],
-                "weight_bytes": row[3],
-                "expired": row[4],
-                "status": row[5],
-            }
-            for row in rows
-        ]
+        return [cls._row_to_dict(row) for row in rows]

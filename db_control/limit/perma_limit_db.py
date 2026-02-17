@@ -1,6 +1,6 @@
 from typing import Any
 
-from ..base_db import BaseDB, SQLTask, TableSpec
+from ..base_db import BaseDB, TableSpec
 
 
 class PermaLimitDB(BaseDB):
@@ -28,14 +28,11 @@ class PermaLimitDB(BaseDB):
         lore_char_slot: int = 0,
         weight_bytes: int = 0,
     ) -> None:
-        cls.write(
-            SQLTask(
-                """
-                INSERT INTO perma_limit (cid, char_slot, lore_char_slot, weight_bytes)
-                VALUES (?, ?, ?, ?)
-                """,
-                (cid, char_slot, lore_char_slot, weight_bytes),
-            )
+        cls._insert(
+            cid=(cid, int),
+            char_slot=(char_slot, int),
+            lore_char_slot=(lore_char_slot, int),
+            weight_bytes=(weight_bytes, int),
         )
 
     @classmethod
@@ -46,60 +43,37 @@ class PermaLimitDB(BaseDB):
         lore_char_slot: int | None = None,
         weight_bytes: int | None = None,
     ) -> None:
-        fields = []
-        params: list[Any] = []
+        cols = {}
 
         if char_slot is not None:
-            fields.append("char_slot = ?")
-            params.append(char_slot)
+            cols["char_slot"] = (char_slot, int)
 
         if lore_char_slot is not None:
-            fields.append("lore_char_slot = ?")
-            params.append(lore_char_slot)
+            cols["lore_char_slot"] = (lore_char_slot, int)
 
         if weight_bytes is not None:
-            fields.append("weight_bytes = ?")
-            params.append(weight_bytes)
+            cols["weight_bytes"] = (weight_bytes, int)
 
-        if not fields:
+        if not cols:
             return
 
-        params.append(cid)
-
-        cls.write(
-            SQLTask(
-                f"""
-                UPDATE perma_limit
-                SET {", ".join(fields)}
-                WHERE cid = ?
-                """,
-                tuple(params),
-            )
+        cls._update(
+            where=("cid", cid),
+            **cols,
         )
 
     @classmethod
     def delete(cls, cid: int) -> None:
-        cls.write(SQLTask("DELETE FROM perma_limit WHERE cid = ?", (cid,)))
+        cls._delete(where=("cid", cid))
 
     @classmethod
     def get(cls, cid: int) -> dict[str, Any] | None:
-        with cls.read() as conn:
-            cur = conn.execute(
-                """
-                SELECT cid, char_slot, lore_char_slot, weight_bytes
-                FROM perma_limit
-                WHERE cid = ?
-                """,
-                (cid,),
-            )
-            row = cur.fetchone()
-
-        if row is None:
-            return None
-
-        return {
-            "cid": row[0],
-            "char_slot": row[1],
-            "lore_char_slot": row[2],
-            "weight_bytes": row[3],
-        }
+        return cls._get(
+            where=("cid", cid),
+            fields={
+                "cid": int,
+                "char_slot": int,
+                "lore_char_slot": int,
+                "weight_bytes": int,
+            },
+        )

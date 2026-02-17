@@ -24,7 +24,7 @@ class TableSpec:
     def sql_tasks(self) -> list[SQLTask]:
         tasks = [
             SQLTask("PRAGMA journal_mode=WAL;"),
-            SQLTask("PRAGMA synchronous = NORMAL;"),
+            SQLTask("PRAGMA synchronous=NORMAL;"),
             SQLTask(
                 f"CREATE TABLE IF NOT EXISTS {self.name} ({', '.join(self.columns)});"
             ),
@@ -64,18 +64,30 @@ class BaseDB:
             cls.write(task)
 
     @classmethod
-    def _pack(cls, value, typ):
-        if typ is json:
+    def _pack(cls, value: Any, typ: type):
+        if value is None:
+            return None
+
+        if typ in (dict, list):
             return json.dumps(value, ensure_ascii=False)
 
         return value
 
     @classmethod
-    def _unpack(cls, value, typ):
-        if typ is json:
-            return json.loads(value)
+    def _unpack(cls, value: Any, typ: type):
+        if value is None:
+            return None
 
-        return typ(value) if typ is not None else value
+        if typ in (dict, list):
+            decoded = json.loads(value)
+            if not isinstance(decoded, typ):
+                raise TypeError(
+                    f"Expected {typ.__name__}, got {type(decoded).__name__}"
+                )
+
+            return decoded
+
+        return typ(value)
 
     @classmethod
     @contextmanager
@@ -135,6 +147,40 @@ class BaseDB:
             return None
 
         return {k: cls._unpack(v, fields[k]) for k, v in zip(fields.keys(), row)}
+
+    @classmethod
+    def _list(
+        cls,
+        *,
+        fields: dict[str, type],
+        where: tuple[str, object] | None = None,
+        order_by: str | None = None,
+        limit: int | None = None,
+    ) -> list[dict[str, Any]]:
+        cols = ", ".join(fields.keys())
+        sql = f"SELECT {cols} FROM {cls._db_name}"
+        params: list[object] = []
+
+        if where is not None:
+            w_key, w_val = where
+            sql += f" WHERE {w_key} = ?"
+            params.append(w_val)
+
+        if order_by is not None:
+            sql += f" ORDER BY {order_by}"
+
+        if limit is not None:
+            sql += " LIMIT ?"
+            params.append(limit)
+
+        with cls.read() as conn:
+            cur = conn.execute(sql, tuple(params))
+            rows = cur.fetchall()
+
+        return [
+            {k: cls._unpack(v, fields[k]) for k, v in zip(fields.keys(), row)}
+            for row in rows
+        ]
 
     @classmethod
     def _delete(cls, *, where: tuple[str, Any]) -> None:
