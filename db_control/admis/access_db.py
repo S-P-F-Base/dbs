@@ -10,7 +10,6 @@ class AccessDB(BaseDB):
         name="access_db",
         columns=[
             "cid INTEGER PRIMARY KEY",  # credential.cid
-            "version INTEGER NOT NULL DEFAULT 0",
             "data BLOB NOT NULL",  # json blob
         ],
     )
@@ -24,11 +23,9 @@ class AccessDB(BaseDB):
         cls,
         cid: int,
         access: dict[str, bool] | None = None,
-        version: int = 0,
     ) -> None:
         cls._insert(
             cid=(cid, int),
-            version=(version, int),
             data=(access or {}, dict),
         )
 
@@ -38,12 +35,8 @@ class AccessDB(BaseDB):
         cid: int,
         *,
         access: dict[str, bool] | None = None,
-        version: int | None = None,
     ) -> None:
         cols = {}
-
-        if version is not None:
-            cols["version"] = (version, int)
 
         if access is not None:
             cols["data"] = (access, dict)
@@ -66,28 +59,6 @@ class AccessDB(BaseDB):
             where=("cid", cid),
             fields={
                 "cid": int,
-                "version": int,
                 "data": dict,
             },
         )
-
-    @classmethod
-    def get_by_version(cls, version: int) -> list[dict[str, Any]]:
-        rows = cls._list(
-            where=("version", version),
-            order_by="cid",
-            fields={
-                "cid": int,
-                "version": int,
-                "data": dict,
-            },
-        )
-
-        return [
-            {
-                "cid": row["cid"],
-                "version": row["version"],
-                "access": row["data"],
-            }
-            for row in rows
-        ]
