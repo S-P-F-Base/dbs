@@ -2,10 +2,6 @@ import contextlib
 
 from fastapi import FastAPI
 
-from router.info_api import router as info_api_router
-from router.overlord_api import router as overlord_api_router
-from router.user_api import router as user_api_router
-
 from db_control import (
     AccessDB,
     BlacklistDB,
@@ -21,6 +17,7 @@ from db_control import (
     PlayerCharDB,
     TimedLimitDB,
 )
+from router.overlord_api import router as overlord_api_router
 
 
 @contextlib.asynccontextmanager
@@ -56,6 +53,4 @@ app = FastAPI(
     openapi_url=None,
 )
 
-app.include_router(info_api_router)
-app.include_router(user_api_router)
 app.include_router(overlord_api_router)
