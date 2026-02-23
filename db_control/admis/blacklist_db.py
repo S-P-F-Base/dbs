@@ -23,8 +23,8 @@ class BlacklistDB(BaseDB):
         cls,
         cid: int,
         data: dict[str, Any] | None = None,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             data=(data or {}, dict),
         )

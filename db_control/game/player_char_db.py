@@ -37,8 +37,8 @@ class PlayerCharDB(BaseDB):
         content_ids: list[str],
         discord_url: str | None = None,
         game_db_id: int | None = None,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             name=(name, str),
             discord_url=(discord_url, str),

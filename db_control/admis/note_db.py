@@ -29,8 +29,8 @@ class NoteDB(BaseDB):
         cid: int,
         type: str,
         msg: str,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             type=(type, str),
             msg=(msg, str),

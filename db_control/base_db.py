@@ -100,12 +100,18 @@ class BaseDB:
             conn.close()
 
     @classmethod
-    def write(cls, task: SQLTask):
+    def write(cls, task: SQLTask, return_lastid: bool = False) -> int | None:
         with cls._connect() as conn:
-            conn.execute(task.sql, task.params or ())
+            cur = conn.execute(task.sql, task.params or ())
+            conn.commit()
+            if return_lastid:
+                return cur.lastrowid
+
+            else:
+                return None
 
     @classmethod
-    def _insert(cls, **cols):
+    def _insert(cls, **cols) -> int:
         keys = []
         vals = []
 
@@ -114,7 +120,7 @@ class BaseDB:
             vals.append(cls._pack(v, t))
 
         sql = f"INSERT INTO {cls._db_name} ({', '.join(keys)}) VALUES ({', '.join('?' * len(vals))})"
-        cls.write(SQLTask(sql, tuple(vals)))
+        return cls.write(SQLTask(sql, tuple(vals)), True)  # pyright: ignore[reportReturnType]
 
     @classmethod
     def _update(cls, *, where: tuple[str, object], **cols):

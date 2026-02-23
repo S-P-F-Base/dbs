@@ -37,8 +37,8 @@ class LoreCharRegistryDB(BaseDB):
         cid: int | None = None,
         game_db_id: int | None = None,
         wiki_url: str | None = None,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             name=(name, str),
             status=(status, str),
             cid=(cid, int),

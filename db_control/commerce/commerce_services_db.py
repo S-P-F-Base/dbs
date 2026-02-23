@@ -33,11 +33,11 @@ class CommerceServicesDB(BaseDB):
         discount: str,
         discount_end_time: int,
         time_of_create: int | None = None,
-    ) -> None:
+    ) -> int:
         if time_of_create is None:
             time_of_create = int(time.time())
 
-        cls._insert(
+        return cls._insert(
             name=(name, str),
             desc=(desc, str),
             price=(price, str),

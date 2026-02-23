@@ -33,11 +33,11 @@ class CommercialChecksDB(BaseDB):
         snap: dict[str, Any] | None = None,
         timestamp: int | None = None,
         tax_id: str | None = None,
-    ) -> None:
+    ) -> int:
         if timestamp is None:
             timestamp = int(time.time())
 
-        cls._insert(
+        return cls._insert(
             cid=(cid, int),
             csid=(csid, int),
             tax_id=(tax_id, str),

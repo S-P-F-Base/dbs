@@ -24,11 +24,11 @@ class ForgetmeDB(BaseDB):
         cls,
         discord_id: int,
         timestamp: int | None = None,
-    ) -> None:
+    ) -> int:
         if timestamp is None:
             timestamp = int(time.time())
 
-        cls._insert(
+        return cls._insert(
             discord_id=(discord_id, int),
             timestamp=(timestamp, int),
         )

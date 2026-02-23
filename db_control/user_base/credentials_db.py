@@ -21,8 +21,8 @@ class CredentialsDB(BaseDB):
         cls._init_from_spec(cls.TABLE)
 
     @classmethod
-    def create(cls, discord_id: str, steam64_id: str | None) -> None:
-        cls._insert(
+    def create(cls, discord_id: str, steam64_id: str | None) -> int:
+        return cls._insert(
             discord_id=(discord_id, str),
             steam64_id=(steam64_id, str),
         )

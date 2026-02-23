@@ -25,8 +25,8 @@ class CustomizationDB(BaseDB):
         cid: int,
         name: str | None = None,
         path_to_image: str | None = None,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             name=(name, str),
             path_to_image=(path_to_image, str),

@@ -52,8 +52,8 @@ class TimedLimitDB(BaseDB):
         weight_bytes: int,
         expired: int,
         status: TimedLimitStatus = "active",
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             char_slot=(char_slot, int),
             weight_bytes=(weight_bytes, int),

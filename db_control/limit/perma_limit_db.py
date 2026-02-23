@@ -27,8 +27,8 @@ class PermaLimitDB(BaseDB):
         char_slot: int = 0,
         lore_char_slot: int = 0,
         weight_bytes: int = 0,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             char_slot=(char_slot, int),
             lore_char_slot=(lore_char_slot, int),

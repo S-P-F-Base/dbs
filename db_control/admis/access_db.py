@@ -23,8 +23,8 @@ class AccessDB(BaseDB):
         cls,
         cid: int,
         access: dict[str, bool] | None = None,
-    ) -> None:
-        cls._insert(
+    ) -> int:
+        return cls._insert(
             cid=(cid, int),
             data=(access or {}, dict),
         )
