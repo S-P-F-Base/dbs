@@ -17,17 +17,6 @@ from db_control import (
 router = APIRouter()
 
 
-@router.get("/dbs/user/{id}")
-async def user_get(id: int):
-    return JSONResponse(
-        {
-            "ok": True,
-            "id": id,
-        },
-        status_code=200,
-    )
-
-
 @router.post("/dbs/user/{id}/{action}")
 async def user_post(id: int, action: str, payload: dict[str, Any]):
     func = _USER_POST_DISP.get(action, None)
@@ -96,7 +85,17 @@ def delete_user(id: int, payload: dict[str, Any]) -> JSONResponse:  # TODO:
     pass
 
 
+def update_user(id: int, payload: dict[str, Any]) -> JSONResponse:  # TODO:
+    pass
+
+
+def read_user(id: int, payload: dict[str, Any]) -> JSONResponse:  # TODO:
+    pass
+
+
 _USER_POST_DISP: dict[str, Callable[[int, dict[str, Any]], JSONResponse]] = {
     "create": create_user,
     "delete": delete_user,
+    "update": update_user,
+    "read": read_user,
 }

@@ -1,14 +1,33 @@
 import logging
+from enum import IntEnum
 from pathlib import Path
-from typing import Literal
+from typing import Any
 
 import httpx
 
 log = logging.getLogger(__name__)
 
 OVERLORD_SOCKET = Path("/run/spf/overlord.sock")
-USER_GET_TYPE = ["id", "discord", "steam64"]
-USER_GET_TYPE_L = Literal["id", "discord", "steam64"]
+
+
+class AccessBitFlags(IntEnum):
+    READ = 1 << 0
+    CREATE = 1 << 1
+    UPDATE = 1 << 2
+    DELETE = 1 << 3
+
+
+BASE_ACCESS: dict[str, Any] = {
+    "all_access": False,
+    "manage_access": False,
+    "svr": {
+        "user": 0,
+    },
+}
+
+BASE_OPTIN: dict[str, bool] = {
+    "": False,
+}
 
 
 class Constants:
