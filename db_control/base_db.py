@@ -138,14 +138,27 @@ class BaseDB:
         cls.write(SQLTask(sql, tuple(params)))
 
     @classmethod
-    def _get(cls, *, where: tuple[str, object], fields: dict[str, type]):
-        w_key, w_val = where
+    def _get(
+        cls,
+        *,
+        where: tuple[str, object] | list[tuple[str, object]],
+        fields: dict[str, type],
+    ):
         cols = ", ".join(fields.keys())
+
+        if isinstance(where, tuple):
+            where_items = [where]
+            
+        else:
+            where_items = where
+
+        where_sql = " AND ".join(f"{key} = ?" for key, _ in where_items)
+        params = tuple(value for _, value in where_items)
 
         with cls.read() as conn:
             cur = conn.execute(
-                f"SELECT {cols} FROM {cls._db_name} WHERE {w_key} = ?",
-                (w_val,),
+                f"SELECT {cols} FROM {cls._db_name} WHERE {where_sql}",
+                params,
             )
             row = cur.fetchone()
 
