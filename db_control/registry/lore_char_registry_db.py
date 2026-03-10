@@ -5,7 +5,7 @@ from ..base_db import BaseDB, TableSpec
 LoreCharStatus = Literal[
     "free",  # Свободен
     "taken",  # Занят
-    "npb",  # Требуется отыграть на другом лорнике чтобы взять этого
+    "play_before",  # Требуется отыграть на другом лорнике чтобы взять этого
     "block",  # Заблокирован
 ]
 

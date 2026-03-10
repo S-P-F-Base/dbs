@@ -15,6 +15,7 @@ from db_control import (
     PermaLimitDB,
     PlayerCharDB,
     TimedLimitDB,
+    TraitRegistryDB,
 )
 from router.overlord_api import router as overlord_api_router
 
@@ -35,6 +36,7 @@ async def lifespan(app: FastAPI):
             PermaLimitDB,
             PlayerCharDB,
             TimedLimitDB,
+            TraitRegistryDB,
         ]:
             cl.set_up()
 
