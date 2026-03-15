@@ -3,19 +3,15 @@ import contextlib
 from fastapi import FastAPI
 
 from db_control import (
-    AccessDB,
     BlacklistDB,
     CommerceServicesDB,
     CommercialChecksDB,
-    CredentialsDB,
-    CustomizationDB,
     LoreCharRegistryDB,
     NoteDB,
     OptinDB,
-    PermaLimitDB,
     PlayerCharDB,
-    TimedLimitDB,
     TraitRegistryDB,
+    UserDomain,
 )
 from router.overlord_api import router as overlord_api_router
 
@@ -24,18 +20,18 @@ from router.overlord_api import router as overlord_api_router
 async def lifespan(app: FastAPI):
     try:
         for cl in [
-            AccessDB,
+            UserDomain,
+        ]:
+            cl.set_up_bd()
+
+        for cl in [
             BlacklistDB,
             CommerceServicesDB,
             CommercialChecksDB,
-            CredentialsDB,
-            CustomizationDB,
             LoreCharRegistryDB,
             NoteDB,
             OptinDB,
-            PermaLimitDB,
             PlayerCharDB,
-            TimedLimitDB,
             TraitRegistryDB,
         ]:
             cl.set_up()
