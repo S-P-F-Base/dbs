@@ -23,7 +23,7 @@ async def lifespan(app: FastAPI):
         for cl in [
             UserDomain,
         ]:
-            cl.set_up_bd()
+            cl.set_up()
 
         for cl in [
             BlacklistDB,

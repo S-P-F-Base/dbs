@@ -13,6 +13,9 @@ class LimitDB(BaseDB):
         "cid": int,
         "title": str,
         "description": str,
+        "weight_bytes_add": int,
+        "char_slots_add": int,
+        "lore_slots_add": int,
         "expires_at": int,
         "status": str,
     }
@@ -24,6 +27,9 @@ class LimitDB(BaseDB):
             "cid INTEGER NOT NULL",  # credential.id
             "title TEXT NOT NULL",  # short title
             "description TEXT",  # long description
+            "weight_bytes_add INTEGER NOT NULL DEFAULT 0",
+            "char_slots_add INTEGER NOT NULL DEFAULT 0",
+            "lore_slots_add INTEGER NOT NULL DEFAULT 0",
             "expires_at INTEGER",  # unix timestamp when limit expires
             "status TEXT NOT NULL DEFAULT 'normal'",
         ],
@@ -43,6 +49,9 @@ class LimitDB(BaseDB):
         cid: int,
         title: str,
         description: str | None = None,
+        weight_bytes_add: int = 0,
+        char_slots_add: int = 0,
+        lore_slots_add: int = 0,
         expires_at: int | None = None,
         status: LimitStatus = "normal",
     ) -> int:
@@ -50,6 +59,9 @@ class LimitDB(BaseDB):
             cid=(cid, int),
             title=(title, str),
             description=(description, str),
+            weight_bytes_add=(weight_bytes_add, int),
+            char_slots_add=(char_slots_add, int),
+            lore_slots_add=(lore_slots_add, int),
             expires_at=(expires_at, int),
             status=(status, str),
         )
@@ -61,6 +73,9 @@ class LimitDB(BaseDB):
         *,
         title: str | None = None,
         description: str | None = None,
+        weight_bytes_add: int | None = None,
+        char_slots_add: int | None = None,
+        lore_slots_add: int | None = None,
         expires_at: int | None = None,
         status: LimitStatus | None = None,
     ) -> None:
@@ -71,6 +86,15 @@ class LimitDB(BaseDB):
 
         if description is not None:
             cols["description"] = (description, str)
+
+        if weight_bytes_add is not None:
+            cols["weight_bytes_add"] = (weight_bytes_add, int)
+
+        if char_slots_add is not None:
+            cols["char_slots_add"] = (char_slots_add, int)
+
+        if lore_slots_add is not None:
+            cols["lore_slots_add"] = (lore_slots_add, int)
 
         if expires_at is not None:
             cols["expires_at"] = (expires_at, int)

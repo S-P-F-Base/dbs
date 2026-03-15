@@ -6,7 +6,7 @@ from .limit_db import LimitStatus
 
 class UserDomain:
     @staticmethod
-    def set_up_bd() -> None:
+    def set_up() -> None:
         CredentialsDB.set_up()
         AccessDB.set_up()
         CustomizationDB.set_up()
@@ -166,6 +166,9 @@ class UserDomain:
         *,
         title: str,
         description: str | None = None,
+        weight_bytes_add: int = 0,
+        char_slots_add: int = 0,
+        lore_slots_add: int = 0,
         expires_at: int | None = None,
         status: LimitStatus = "normal",
     ) -> int:
@@ -173,6 +176,9 @@ class UserDomain:
             cid=cid,
             title=title,
             description=description,
+            weight_bytes_add=weight_bytes_add,
+            char_slots_add=char_slots_add,
+            lore_slots_add=lore_slots_add,
             expires_at=expires_at,
             status=status,
         )
@@ -183,6 +189,9 @@ class UserDomain:
         *,
         title: str | None = None,
         description: str | None = None,
+        weight_bytes_add: int | None = None,
+        char_slots_add: int | None = None,
+        lore_slots_add: int | None = None,
         expires_at: int | None = None,
         status: LimitStatus | None = None,
     ) -> None:
@@ -190,6 +199,9 @@ class UserDomain:
             uid=uid,
             title=title,
             description=description,
+            weight_bytes_add=weight_bytes_add,
+            char_slots_add=char_slots_add,
+            lore_slots_add=lore_slots_add,
             expires_at=expires_at,
             status=status,
         )
