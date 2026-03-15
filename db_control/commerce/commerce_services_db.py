@@ -5,7 +5,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class CommerceServicesDB(BaseDB):
-    _db_name = "commerce_services_db"
+    _db_name = "commerce_services"
 
     TABLE = TableSpec(
         name="commerce_services_db",

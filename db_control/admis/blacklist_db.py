@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class BlacklistDB(BaseDB):
-    _db_name = "blacklist_db"
+    _db_name = "blacklist"
 
     TABLE = TableSpec(
         name="blacklist_db",

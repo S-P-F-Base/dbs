@@ -47,6 +47,15 @@ class BaseDB:
         return _DB_DIR / f"{cls._db_name}.db"
 
     @classmethod
+    def _table_name(cls) -> str:
+        table = getattr(cls, "TABLE", None)
+        table_name = getattr(table, "name", None)
+        if isinstance(table_name, str) and table_name:
+            return table_name
+
+        return cls._db_name
+
+    @classmethod
     def _connect(cls) -> sqlite3.Connection:
         conn = sqlite3.connect(
             cls._db_path(),
@@ -122,7 +131,8 @@ class BaseDB:
             keys.append(k)
             vals.append(cls._pack(v, t))
 
-        sql = f"INSERT INTO {cls._db_name} ({', '.join(keys)}) VALUES ({', '.join('?' * len(vals))})"
+        table_name = cls._table_name()
+        sql = f"INSERT INTO {table_name} ({', '.join(keys)}) VALUES ({', '.join('?' * len(vals))})"
         return cls.write(SQLTask(sql, tuple(vals)), True)  # pyright: ignore[reportReturnType]
 
     @classmethod
@@ -137,7 +147,8 @@ class BaseDB:
         w_key, w_val = where
         params.append(w_val)
 
-        sql = f"UPDATE {cls._db_name} SET {', '.join(set_sql)} WHERE {w_key} = ?"
+        table_name = cls._table_name()
+        sql = f"UPDATE {table_name} SET {', '.join(set_sql)} WHERE {w_key} = ?"
         cls.write(SQLTask(sql, tuple(params)))
 
     @classmethod
@@ -151,16 +162,17 @@ class BaseDB:
 
         if isinstance(where, tuple):
             where_items = [where]
-            
+
         else:
             where_items = where
 
         where_sql = " AND ".join(f"{key} = ?" for key, _ in where_items)
         params = tuple(value for _, value in where_items)
+        table_name = cls._table_name()
 
         with cls.read() as conn:
             cur = conn.execute(
-                f"SELECT {cols} FROM {cls._db_name} WHERE {where_sql}",
+                f"SELECT {cols} FROM {table_name} WHERE {where_sql}",
                 params,
             )
             row = cur.fetchone()
@@ -180,7 +192,8 @@ class BaseDB:
         limit: int | None = None,
     ) -> list[dict[str, Any]]:
         cols = ", ".join(fields.keys())
-        sql = f"SELECT {cols} FROM {cls._db_name}"
+        table_name = cls._table_name()
+        sql = f"SELECT {cols} FROM {table_name}"
         params: list[object] = []
 
         if where is not None:
@@ -207,10 +220,11 @@ class BaseDB:
     @classmethod
     def _delete(cls, *, where: tuple[str, Any]) -> None:
         col, value = where
+        table_name = cls._table_name()
 
         cls.write(
             SQLTask(
-                f"DELETE FROM {cls._db_name} WHERE {col} = ?",
+                f"DELETE FROM {table_name} WHERE {col} = ?",
                 (value,),
             )
         )

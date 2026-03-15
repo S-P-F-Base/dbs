@@ -6,7 +6,7 @@ PlayerCharType = Literal["lore", "norm"]
 
 
 class PlayerCharDB(BaseDB):
-    _db_name = "player_char_db"
+    _db_name = "player_char"
 
     TABLE = TableSpec(
         name="player_char_db",

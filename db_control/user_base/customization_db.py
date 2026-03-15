@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class CustomizationDB(BaseDB):
-    _db_name = "customization_db"
+    _db_name = "customization"
 
     TABLE = TableSpec(
         name="customization_db",

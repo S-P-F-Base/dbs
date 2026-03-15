@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class CredentialsDB(BaseDB):
-    _db_name = "credentials_db"
+    _db_name = "credentials"
 
     _FIELDS: Final[dict[str, type]] = {
         "id": int,

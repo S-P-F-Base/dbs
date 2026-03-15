@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class NoteDB(BaseDB):
-    _db_name = "note_db"
+    _db_name = "note"
 
     TABLE = TableSpec(
         name="note_db",

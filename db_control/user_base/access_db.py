@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class AccessDB(BaseDB):
-    _db_name = "access_db"
+    _db_name = "access"
 
     TABLE = TableSpec(
         name="access_db",

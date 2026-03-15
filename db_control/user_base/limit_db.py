@@ -6,7 +6,7 @@ LimitStatus = Literal["normal", "canceled", "revoked", "expired"]
 
 
 class LimitDB(BaseDB):
-    _db_name = "limit_db"
+    _db_name = "limit"
 
     _FIELDS: Final[dict[str, type]] = {
         "uid": int,

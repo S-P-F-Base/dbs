@@ -4,7 +4,7 @@ from ..base_db import BaseDB, TableSpec
 
 
 class OptinDB(BaseDB):
-    _db_name = "optin_db"
+    _db_name = "optin"
 
     TABLE = TableSpec(
         name="optin_db",
