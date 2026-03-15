@@ -1,4 +1,5 @@
 import json
+import os
 import sqlite3
 from collections.abc import Sequence
 from contextlib import contextmanager
@@ -6,7 +7,9 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-_DB_DIR = Path("data/dbs")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_DEFAULT_DB_DIR = _PROJECT_ROOT / "data" / "dbs"
+_DB_DIR = Path(os.getenv("DBS_DATA_DIR", str(_DEFAULT_DB_DIR))).resolve()
 
 
 @dataclass(frozen=True)
