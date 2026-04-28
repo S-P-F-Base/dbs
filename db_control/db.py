@@ -4,13 +4,15 @@ import dataset
 
 
 class DB:
-    _base_dir = Path(__file__).parents[1] / "data"
-    _db_path = _base_dir / "app.db"
+    _main: dataset.Database = None  # pyright: ignore[reportAssignmentType]
 
     @classmethod
     def init(cls) -> None:
-        cls._base_dir.mkdir(parents=True, exist_ok=True)
-        cls._main = dataset.connect(f"sqlite:///{cls._db_path}?timeout=5")
+        if cls._main is None:
+            db_path = Path(__file__).parents[1] / "data" / "app.db"
+            db_path.parent.mkdir(exist_ok=True)
+            cls._main = dataset.connect(f"sqlite:///{db_path}?timeout=5")
+
         cls._init_schema()
 
     @classmethod
