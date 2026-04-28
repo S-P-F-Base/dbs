@@ -2,7 +2,7 @@ import contextlib
 
 from fastapi import FastAPI
 
-from db_control.db import DB
+from db_control import DB
 from router.overlord_api import router as overlord_api_router
 from router.user_api import router as user_api_router
 
