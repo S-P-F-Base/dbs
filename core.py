@@ -3,7 +3,7 @@ import contextlib
 from fastapi import FastAPI
 
 from db import DataBase
-from router.authorization import router as auth_router
+from router.auth import router as auth_router
 
 
 @contextlib.asynccontextmanager
