@@ -10,7 +10,7 @@
                 "FASTAPISTATIC": "1"
             },
             "args": [
-                "app:app",
+                "core:app",
                 "--host",
                 "localhost",
                 "--port",
